@@ -24,9 +24,18 @@ module SimpleButton = {
 };
 
 module Countdown = {
+  let formatTime = (seconds) => {
+    let minutes = seconds / 60;
+    let remainingSeconds = seconds mod 60;
+
+    let paddedRemaingSeconds = remainingSeconds < 10 ? "0" ++ string_of_int(remainingSeconds) : string_of_int(remainingSeconds);
+
+    string_of_int(minutes) ++ ":" ++ paddedRemaingSeconds
+  }
+
   let component = React.component("Countdown");
 
-  let make = (~countdownTime) =>
+  let make = (~countdownTime, ~onStop) =>
     component(slots => {
       let (count, setCount, slots) = React.Hooks.state(countdownTime, slots);
 
@@ -37,42 +46,57 @@ module Countdown = {
         React.Hooks.effect(
           OnMount,
           () => {
-            print_endline("lalkdfasfas");
+            switch maybeStopInterval {
+            | Some (stopInterval) => stopInterval()
+            | None => ()
+            };
 
-            Some(
-              () => {
-                print_endline("lalala");
-
-                setMaybeStopInterval(
-                  Some(
-                    Revery_Core.Tick.interval(
-                      _ => setCount(count - 1),
-                      Revery_Core.Time.Seconds(0.),
-                    ),
-                  ),
-                );
-              },
+            setMaybeStopInterval(
+              Some(
+                Revery_Core.Tick.interval(
+                  _ => setCount(count - 1),
+                  Revery_Core.Time.Seconds(1.),
+                ),
+              ),
             );
+
+            Some(() => {()});
           },
           slots,
         );
 
       let _slots: React.Hooks.empty =
         React.Hooks.effect(
-          React.Hooks.Effect.Always,
+          If((current, previous) => current != previous, count),
           () => {
-            print_endline("Aasdf ASDF ");
+            switch maybeStopInterval {
+            | Some (stopInterval) => stopInterval()
+            | None => ()
+            };
 
-            maybeStopInterval;
+            if (count > 0) {
+              setMaybeStopInterval(
+                Some(
+                  Revery_Core.Tick.interval(
+                    _ => setCount(count - 1),
+                    Revery_Core.Time.Seconds(1.),
+                  ),
+                ),
+              );
+            } else {
+              onStop()
+            }
+
+            Some(() => {()})
           },
           slots,
         );
 
-      <Text style=textStyle text={string_of_int(count)} />;
+      <Text style=textStyle text={formatTime(count)} />;
     });
 
-  let createElement = (~children as _, ~countdownTime, ()) =>
-    React.element(make(~countdownTime));
+  let createElement = (~children as _, ~countdownTime, ~onStop, ()) =>
+    React.element(make(~countdownTime, ~onStop));
 };
 
 type state =
@@ -87,7 +111,7 @@ module Pomodoro = {
       let (state, setState, _slots: React.Hooks.empty) =
         React.Hooks.state(Stopped, slots);
 
-      /* let stop = () => setState(Stopped); */
+      let stop = () => setState(Stopped);
       let start = () => setState(Started);
 
       <View
@@ -106,10 +130,10 @@ module Pomodoro = {
              <Text style=textStyle text="Start the Pomodoro" />
              <View> <SimpleButton onClick=start text="Start" /> </View>
            </View>
-         | Started =>
-           <View style=Style.[flexDirection(`Row), alignItems(`FlexEnd)]>
-             <Countdown countdownTime=8 />
-           </View>
+         | Started => <Countdown 
+            countdownTime=1200
+            onStop=stop
+          />
          }}
       </View>;
     });
