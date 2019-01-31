@@ -4,64 +4,13 @@ open Revery.Math;
 open Revery.UI;
 open Revery.UI.Components;
 
-module AnimatedText = {
-  let component = React.component("AnimatedText");
-
-  let make = (~delay, ~textContent, ()) =>
-    component(slots => {
-      let (translate, slots) =
-        Hooks.animation(
-          Animated.floatValue(50.),
-          {
-            toValue: 0.,
-            duration: Seconds(0.5),
-            delay: Seconds(delay),
-            repeat: false,
-            easing: Animated.linear,
-          },
-          slots,
-        );
-
-      let (opacity: float, _slots: React.Hooks.empty) =
-        Hooks.animation(
-          Animated.floatValue(0.),
-          {
-            toValue: 1.0,
-            duration: Seconds(1.),
-            delay: Seconds(delay),
-            repeat: false,
-            easing: Animated.linear,
-          },
-          slots,
-        );
-
-      let textHeaderStyle =
-        Style.make(
-          ~color=Colors.white,
-          ~fontFamily="Lato-Regular.ttf",
-          ~fontSize=24,
-          ~marginHorizontal=8,
-          ~opacity,
-          ~transform=[TranslateY(translate)],
-          (),
-        );
-
-      <Text style=textHeaderStyle text=textContent />;
-    });
-
-  let createElement = (~children as _, ~delay, ~textContent, ()) =>
-    React.element(make(~delay, ~textContent, ()));
-};
+let textStyle = Style.make(~fontFamily="Lato-Regular.ttf", ~fontSize=20, ());
 
 module SimpleButton = {
   let component = React.component("SimpleButton");
 
-  let make = () =>
-    component(slots => {
-      let (count, setCount, _slots: React.Hooks.empty) =
-        React.Hooks.state(0, slots);
-      let increment = () => setCount(count + 1);
-
+  let make = (~onClick, ~text) =>
+    component((_slots: React.Hooks.empty) => {
       let wrapperStyle =
         Style.make(
           ~backgroundColor=Color.rgba(1., 1., 1., 0.1),
@@ -79,42 +28,125 @@ module SimpleButton = {
           (),
         );
 
-      let textContent = "Click me: " ++ string_of_int(count);
-      <Clickable onClick=increment>
-        <View style=wrapperStyle>
-          <Text style=textHeaderStyle text=textContent />
-        </View>
+      <Clickable onClick>
+        <View style=wrapperStyle> <Text style=textHeaderStyle text /> </View>
       </Clickable>;
     });
 
-  let createElement = (~children as _, ()) => React.element(make());
+  let createElement = (~children as _, ~onClick, ~text, ()) =>
+    React.element(make(~onClick, ~text));
+};
+
+module Countdown = {
+  let component = React.component("Countdown");
+
+  let make = (~countdownTime) =>
+    component(slots => {
+      let (count, setCount, slots) = React.Hooks.state(countdownTime, slots);
+
+      let (maybeStopInterval, setMaybeStopInterval, slots) =
+        React.Hooks.state(None, slots);
+
+      let slots =
+        React.Hooks.effect(
+          React.Hooks.Effect.Always,
+          () => {
+            print_endline("lalkdfasfas");
+            
+            Some(
+              () => {
+                print_endline("lalala");
+
+                setMaybeStopInterval(
+                  Some(
+                    Revery_Core.Tick.interval(
+                      _ => setCount(count - 1),
+                      Revery_Core.Time.Seconds(0.),
+                    ),
+                  ),
+                )
+              }
+            )
+            },
+          slots,
+        );
+
+      let _slots: React.Hooks.empty =
+        React.Hooks.effect(
+          React.Hooks.Effect.If((current, _) => current <= 0, count),
+          () => maybeStopInterval,
+          slots,
+        );
+
+      <Text style=textStyle text={string_of_int(count)} />;
+    });
+
+  let createElement = (~children as _, ~countdownTime, ()) =>
+    React.element(make(~countdownTime));
+};
+
+module Pomodoro = {
+  let component = React.component("Pomodoro");
+
+  let make = (~initialState, ~countdownTime) =>
+    component(slots => {
+      let (count, setCount, countdownSlots: React.Hooks.empty) =
+        React.Hooks.state(initialState, slots);
+
+      let decrement = () => setCount(count - 1);
+      let start = () => setCount(countdownTime);
+
+      print_endline(string_of_int(count));
+
+      <View
+        style={Style.make(
+          ~position=LayoutTypes.Absolute,
+          ~justifyContent=LayoutTypes.JustifyCenter,
+          ~alignItems=LayoutTypes.AlignCenter,
+          ~bottom=0,
+          ~top=0,
+          ~left=0,
+          ~right=0,
+          (),
+        )}>
+        {switch (count) {
+         | 0 =>
+           <View
+             style={Style.make(
+               ~flexDirection=Row,
+               ~alignItems=AlignFlexEnd,
+               (),
+             )}>
+             <Text style=textStyle text="Start the Pomodoro" />
+             <View> <SimpleButton onClick=start text="Start" /> </View>
+           </View>
+         | _ =>
+           <View
+             style={Style.make(
+               ~flexDirection=Row,
+               ~alignItems=AlignFlexEnd,
+               (),
+             )}>
+             <Countdown countdownTime=10 />
+           </View>
+         }}
+      </View>;
+    });
+
+  let createElement = (~children as _, ~initialState=0, ~countdownTime=10, ()) =>
+    React.element(make(~initialState, ~countdownTime));
 };
 
 let init = app => {
   let win = App.createWindow(app, "Welcome to Revery!");
 
-  let render = () =>
-    <View
-      style={Style.make(
-        ~position=LayoutTypes.Absolute,
-        ~justifyContent=LayoutTypes.JustifyCenter,
-        ~alignItems=LayoutTypes.AlignCenter,
-        ~bottom=0,
-        ~top=0,
-        ~left=0,
-        ~right=0,
-        (),
-      )}>
-      <View
-        style={Style.make(~flexDirection=Row, ~alignItems=AlignFlexEnd, ())}>
-        <AnimatedText delay=0.0 textContent="Welcome" />
-        <AnimatedText delay=0.5 textContent="to" />
-        <AnimatedText delay=1. textContent="Revery" />
-      </View>
-      <SimpleButton />
-    </View>;
+  let render = () => <Pomodoro initialState=0 />;
 
   UI.start(win, render);
 };
 
 App.start(init);
+
+/* {string_of_int(count) ++ "Remaining time " ++ string_of_int(count)} */
+
+/* <Text style=textStyle text="Remaining time" /> */
