@@ -5,11 +5,16 @@
   "license": "MIT",
   "esy": {
     "build": "refmterr dune build -p App",
-    "buildsInSource": "_build"
+    "buildsInSource": "_build",
+    "release": {
+      "bin": [
+        "App"
+      ]
+    }
   },
   "dependencies": {
     "ocaml": "~4.7.0",
-    "revery": "0.4.0",
+    "revery": "0.5.1",
     "@opam/dune": "*"
   },
   "resolutions": {
@@ -17,7 +22,8 @@
     "@opam/js_of_ocaml": "github:ocsigen/js_of_ocaml:js_of_ocaml.opam#db257ce",
     "@opam/js_of_ocaml-compiler": "github:ocsigen/js_of_ocaml:js_of_ocaml-compiler.opam#db257ce",
     "@esy-ocaml/reason": "facebook/reason#ab49908",
-    "@brisk/brisk-reconciler": "github:briskml/brisk-reconciler#f545ba0"
+    "@brisk/brisk-reconciler": "github:briskml/brisk-reconciler#7901934",
+    "revery": "revery-ui/revery#67c5691a32a29c0935a92fb264de6898ae82ac09"
   },
   "scripts": {
    "format": "bash -c \"refmt --in-place *.re\"",

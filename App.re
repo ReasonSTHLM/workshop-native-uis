@@ -1,6 +1,5 @@
 open Revery;
 open Revery.Core;
-open Revery.Math;
 open Revery.UI;
 open Revery.UI.Components;
 
@@ -24,14 +23,17 @@ module SimpleButton = {
 };
 
 module Countdown = {
-  let formatTime = (seconds) => {
+  let formatTime = seconds => {
     let minutes = seconds / 60;
     let remainingSeconds = seconds mod 60;
 
-    let paddedRemaingSeconds = remainingSeconds < 10 ? "0" ++ string_of_int(remainingSeconds) : string_of_int(remainingSeconds);
+    let paddedRemaingSeconds =
+      remainingSeconds < 10 ?
+        "0" ++ string_of_int(remainingSeconds) :
+        string_of_int(remainingSeconds);
 
-    string_of_int(minutes) ++ ":" ++ paddedRemaingSeconds
-  }
+    string_of_int(minutes) ++ ":" ++ paddedRemaingSeconds;
+  };
 
   let component = React.component("Countdown");
 
@@ -46,8 +48,8 @@ module Countdown = {
         React.Hooks.effect(
           OnMount,
           () => {
-            switch maybeStopInterval {
-            | Some (stopInterval) => stopInterval()
+            switch (maybeStopInterval) {
+            | Some(stopInterval) => stopInterval()
             | None => ()
             };
 
@@ -60,7 +62,7 @@ module Countdown = {
               ),
             );
 
-            Some(() => {()});
+            Some(() => ());
           },
           slots,
         );
@@ -69,8 +71,8 @@ module Countdown = {
         React.Hooks.effect(
           If((current, previous) => current != previous, count),
           () => {
-            switch maybeStopInterval {
-            | Some (stopInterval) => stopInterval()
+            switch (maybeStopInterval) {
+            | Some(stopInterval) => stopInterval()
             | None => ()
             };
 
@@ -84,10 +86,10 @@ module Countdown = {
                 ),
               );
             } else {
-              onStop()
-            }
+              onStop();
+            };
 
-            Some(() => {()})
+            Some(() => ());
           },
           slots,
         );
@@ -106,7 +108,7 @@ type state =
 module Pomodoro = {
   let component = React.component("Pomodoro");
 
-  let make = (~initialState, ~countdownTime) =>
+  let make = () =>
     component(slots => {
       let (state, setState, _slots: React.Hooks.empty) =
         React.Hooks.state(Stopped, slots);
@@ -130,20 +132,23 @@ module Pomodoro = {
              <Text style=textStyle text="Start the Pomodoro" />
              <View> <SimpleButton onClick=start text="Start" /> </View>
            </View>
-         | Started => <Countdown 
-            countdownTime=1200
-            onStop=stop
-          />
+         | Started => <Countdown countdownTime=10 onStop=stop />
          }}
       </View>;
     });
 
-  let createElement = (~children as _, ~initialState=0, ~countdownTime=10, ()) =>
-    React.element(make(~initialState, ~countdownTime));
+  let createElement = (~children as _, ()) =>
+    React.element(make());
 };
 
 let init = app => {
-  let win = App.createWindow(app, "Welcome to Revery!");
+  let win =
+    App.createWindow(
+      app,
+      "Welcome to Revery!",
+      ~createOptions=
+        Revery.Core.Window.{...defaultCreateOptions, resizable: false, decorated: false},
+    );
 
   let render = () => <Pomodoro />;
 
